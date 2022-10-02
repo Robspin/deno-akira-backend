@@ -31,5 +31,10 @@ export class FtxClient {
         return await response.json()
     }
 
+    async hasOpenPosition() {
+        const data = await this.apiRequest('GET', '/positions')
+        return data.result.length > 0
+    }
+
 
 }

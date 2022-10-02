@@ -1,11 +1,10 @@
 // ichimoku cloud with 20 60 120 30 as settings
 
-let priceAboveTenkan
-let bullishCross
-let bullishCloud
-let priceAboveCloud
-let priceBelowCloud
-let signal
+let priceAboveTenkan: boolean
+let bullishCross: boolean
+let bullishCloud: boolean
+let priceAboveCloud: boolean
+let priceBelowCloud: boolean
 
 const getTenkan = (candles: string[], slice1 = 132, slice2 = 151) => {
     const candleHigh = findHighest(candles.slice(slice1, slice2))
@@ -59,7 +58,7 @@ const findLowest = (arrayAll: any[]) => {
     return Number(min)
 }
 
-const priceAndCloud = (candles: string[], senkouA: string, senkouB: string) => {
+const priceAndCloud = (candles: any[], senkouA: number, senkouB: number) => {
     if (candles[150][4] > senkouA && candles[150][4] > senkouB) {
         priceAboveCloud = true
         priceBelowCloud = false
@@ -87,7 +86,6 @@ export const ichimoku = async (timeframe: string) => {
 
     const tenkan = getTenkan(candles)
     const kijun = getKijun(candles)
-
     const senkouA = getSenkouA(candles)
     const senkouB = getSenkouB(candles)
 
@@ -95,28 +93,25 @@ export const ichimoku = async (timeframe: string) => {
     bullishCross = tenkan > kijun
     bullishCloud = senkouA > senkouB
 
-    console.log(
-        `
-            Tenkan = ${tenkan}, Kijun = ${kijun}. 
+    const signalDetails = `
+            ${new Date().toString()}
+            Tenkan = ${tenkan}, Kijun = ${kijun}.
             SenkouA = ${senkouA}, SenkouB = ${senkouB}.
             ${bullishCross ? 'Bullish cross.' : 'Bearish cross.'}
             ${bullishCloud ? 'Bullish cloud.' : 'Bearish cloud.'}
             ${priceAndCloud(candles, senkouA, senkouB)}
-            ${priceAboveTenkan ? 'Price above tenkan.' : 'Price below tenkan.'}
-               `
-    )
+            ${priceAboveTenkan ? 'Price above tenkan.' : 'Price below tenkan.'}`
 
     if (priceAboveCloud && priceAboveTenkan && bullishCross && bullishCloud) {
-        signal = { signal: 'LONG' }
+        return { signal: 'LONG', signalDetails }
     } else if (
         priceBelowCloud &&
         !priceAboveTenkan &&
         !bullishCross &&
         !bullishCloud
     ) {
-        signal = { signal: 'SHORT' }
+        return { signal: 'SHORT', signalDetails }
     } else {
-        signal = { signal: false }
+        return { signal: false, signalDetails }
     }
-    return signal
 }

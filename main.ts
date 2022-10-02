@@ -1,12 +1,15 @@
-import { config as env } from "https://deno.land/std@0.158.0/dotenv/mod.ts";
+import { config as env } from "https://deno.land/std@0.158.0/dotenv/mod.ts"
+import { cron } from 'https://deno.land/x/deno_cron/cron.ts'
 import { FtxClient } from "./src/exchanges/ftx/client.ts"
-import { williamsFractals } from "./src/indicators/fractals.ts"
-import { ichimoku } from "./src/indicators/ichimoku.ts"
+import { getStrategyInfo } from "./src/strategies/ogStrategy.ts"
+export const VARIABLES = await env()
 
-const VARIABLES = await env()
 
-const ftxClient = new FtxClient(VARIABLES.FTX_API_KEY, VARIABLES.FTX_API_SECRET, VARIABLES.FTX_SUBACCOUNT)
+// const ftxClient = new FtxClient(VARIABLES.FTX_API_KEY, VARIABLES.FTX_API_SECRET, VARIABLES.FTX_SUBACCOUNT)
+//
+// console.log(await ftxClient.hasOpenPosition())
 
-console.log(await ichimoku('4h'))
-
-// console.log(await ftxClient.apiRequest('GET', '/markets/BTC-PERP'))
+cron('00 * * * * *', async () => {
+    const data = await getStrategyInfo()
+    console.log(data.signalDetails)
+})

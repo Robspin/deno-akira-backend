@@ -1,4 +1,4 @@
-// Williams Fractal calculation from daily candles.
+// Williams Fractal calculation from candles.
 
 const getUpFractal = (candleHighs: string[]) => {
     let upFractals: string[] = []
