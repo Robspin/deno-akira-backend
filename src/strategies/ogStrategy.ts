@@ -12,9 +12,6 @@ const getStrategyInfo = async () => {
     const ichimokuSignal = await ichimoku(VARIABLES.STRATEGY_ICHIMOKU_TIMEFRAME)
     const { signal, signalDetails } = ichimokuSignal
 
-    console.log(signalDetails)
-    console.log('Signal: ', signal)
-
     return { fractals, signal, signalDetails }
 }
 
@@ -22,23 +19,40 @@ const getStrategyInfo = async () => {
 export const runStrategy = async () => {
     const { fractals, signal, signalDetails } = await getStrategyInfo()
     const hasOpenPosition = await exchange.hasOpenPosition()
+    const { upFractals, downFractals } = fractals
 
-    console.log(await exchange.apiRequest('GET', '/positions'))
+    console.log(await exchange.placeStopLoss(downFractals[0], 'sell'))
 
-    if (!signal || hasOpenPosition) return
+    if (!signal) {
+        console.log(`
+        ${new Date().toString().slice(0, 24)}
+        ...no signal`)
+        return
+    }
+    if (hasOpenPosition) {
+        console.log(`
+        ${new Date().toString().slice(0, 24)}
+        ...open position`)
+        return
+    }
+
+    console.log(`
+        ${new Date().toString().slice(0, 24)}
+        ${signal} signal!`)
+
     const risk = Number(VARIABLES.STRATEGY_RISK_PERCENTAGE) / 100
     const accountBalance = await exchange.getAccountBalance()
     const sizeInDollars = Number((risk * accountBalance).toFixed(2))
 
     switch (signal) {
         case 'LONG':
-            const res = await exchange.openPosition('buy', sizeInDollars)
-            if (!res.success) return
-            // setStop
+            const longRes = await exchange.openPosition('buy', sizeInDollars)
+            if (!longRes.success) return
+            const longStopRes = await exchange.placeStopLoss(downFractals[0], 'sell')
         case 'SHORT':
-            await exchange.openPosition('sell', sizeInDollars)
-            if (!res.success) return
-            // setStop
+            const shortRes = await exchange.openPosition('sell', sizeInDollars)
+            if (!shortRes.success) return
+            const shortStopRes = await exchange.placeStopLoss(upFractals[0], 'buy')
     }
 
     console.log(`Entered ${signal} position`)

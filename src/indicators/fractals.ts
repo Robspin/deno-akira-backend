@@ -1,7 +1,7 @@
 // Williams Fractal calculation from candles.
 
 const getUpFractal = (candleHighs: string[]) => {
-    let upFractals: string[] = []
+    let upFractals: number[] = []
     candleHighs.forEach((candle, index) => {
         const forward1 = candleHighs[index + 1] < candle
         const forward2 = candleHighs[index + 2] < candle
@@ -9,14 +9,14 @@ const getUpFractal = (candleHighs: string[]) => {
         const backward2 = candleHighs[index - 2] < candle
 
         if (forward1 && forward2 && backward1 && backward2) {
-            upFractals.push(candle)
+            upFractals.push(Number(Number(candle).toFixed(2)))
         }
     })
     return upFractals
 }
 
 const getDownFractal = (candleLows: string[]) => {
-    const downFractals: string[] = []
+    const downFractals: number[] = []
     candleLows.forEach((candle: string, index: number) => {
         const forward1 = candleLows[index + 1] > candle
         const forward2 = candleLows[index + 2] > candle
@@ -24,7 +24,7 @@ const getDownFractal = (candleLows: string[]) => {
         const backward2 = candleLows[index - 2] > candle
 
         if (forward1 && forward2 && backward1 && backward2) {
-            downFractals.push(candle)
+            downFractals.push(Number(Number(candle).toFixed(2)))
         }
     })
     return downFractals
@@ -45,5 +45,5 @@ export const williamsFractals = async (timeframe: string) => {
     const candleLows = candles.map((low: string[]) => low[3])
     const upFractals = getUpFractal(candleHighs)
     const downFractals = getDownFractal(candleLows)
-    return [{ upFractals }, { downFractals }]
+    return { upFractals,  downFractals }
 }

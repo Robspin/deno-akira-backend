@@ -62,17 +62,19 @@ export class FtxClient {
         return await this.apiRequest('POST', '/orders', data)
     }
 
-    async placeStopLoss(price: number) {
+    async placeStopLoss(price: number, side: 'buy' | 'sell') {
         const res = await this.apiRequest('GET', '/positions')
         const positionSize = res.result[0].size
 
-        // const data = {
-        //     'market': 'BTC-PERP',
-        //     'type': 'market',
-        //     'price': null,
-        //     'reduceOnly': true,
-        //     size: positionSize,
-        //     side
-        // }
+        const data = {
+            'market': 'BTC-PERP',
+            'triggerPrice': price,
+            'reduceOnly': true,
+            'type': 'stop',
+            size: positionSize,
+            side
+        }
+
+        return await this.apiRequest('POST', '/conditional_orders', data)
     }
 }
