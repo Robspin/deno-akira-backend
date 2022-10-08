@@ -1,8 +1,8 @@
 import { hmac } from "https://deno.land/x/hmac@v2.0.1/mod.ts"
 
 export class FtxClient {
+    private readonly apiSecret: string
     config: any
-    private apiSecret: string
 
     constructor(apiKey: string, apiSecret: string, subAccount: string) {
         this.config = {
@@ -23,7 +23,7 @@ export class FtxClient {
         this.config.headers['FTX-TS'] = now
         let dataQueryString = now + method + '/api' + url
         if (params) dataQueryString += JSON.stringify(params)
-        console.log(dataQueryString)
+
         this.config.headers['FTX-SIGN'] = hmac('sha256', this.apiSecret, dataQueryString, 'utf8', 'hex')
     }
 
@@ -41,19 +41,38 @@ export class FtxClient {
         return data.result.length > 0
     }
 
-    async getAccountBalance() {
+    async getAccountBalance() : Promise<number> {
         const res = await this.apiRequest('GET', '/account')
         return res.result.totalAccountValue.toFixed(2)
     }
 
-    // const data = {
-//     "market": "BTC/USD",
-//     "side": "buy",
-//     "type": "market",
-//     "size": 0.0011,
-//     "price": null,
-//     "reduceOnly": false,
-// }
-//
-// console.log(await ftxClient.apiRequest('POST', '/orders', data))
+    async openPosition(side: 'buy' | 'sell', size: number) {
+        const currentFuture = await this.apiRequest('GET', '/futures/BTC-PERP')
+        const convertedSize = size / currentFuture.result.last
+
+        const data = {
+            'market': 'BTC-PERP',
+            'type': 'market',
+            'price': null,
+            'reduceOnly': false,
+            size: convertedSize,
+            side
+        }
+
+        return await this.apiRequest('POST', '/orders', data)
+    }
+
+    async placeStopLoss(price: number) {
+        const res = await this.apiRequest('GET', '/positions')
+        const positionSize = res.result[0].size
+
+        // const data = {
+        //     'market': 'BTC-PERP',
+        //     'type': 'market',
+        //     'price': null,
+        //     'reduceOnly': true,
+        //     size: positionSize,
+        //     side
+        // }
+    }
 }
