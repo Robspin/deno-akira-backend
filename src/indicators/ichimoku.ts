@@ -94,7 +94,7 @@ export const ichimoku = async (timeframe: string) => {
     bullishCloud = senkouA > senkouB
 
     const signalDetails = `
-            ${new Date().toString()}
+            ${new Date().toString().slice(0, 24)}
             Tenkan = ${tenkan}, Kijun = ${kijun}.
             SenkouA = ${senkouA}, SenkouB = ${senkouB}.
             ${bullishCross ? 'Bullish cross.' : 'Bearish cross.'}

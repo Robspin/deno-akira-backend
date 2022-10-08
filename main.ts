@@ -5,11 +5,26 @@ import { getStrategyInfo } from "./src/strategies/ogStrategy.ts"
 export const VARIABLES = await env()
 
 
-// const ftxClient = new FtxClient(VARIABLES.FTX_API_KEY, VARIABLES.FTX_API_SECRET, VARIABLES.FTX_SUBACCOUNT)
-//
-// console.log(await ftxClient.hasOpenPosition())
+const ftxClient = new FtxClient(VARIABLES.FTX_API_KEY, VARIABLES.FTX_API_SECRET, VARIABLES.FTX_SUBACCOUNT)
 
-cron('00 * * * * *', async () => {
-    const data = await getStrategyInfo()
-    console.log(data.signalDetails)
-})
+console.log(await ftxClient.getAccountBalance())
+
+// const data = {
+//     "market": "BTC/USD",
+//     "side": "buy",
+//     "type": "market",
+//     "size": 0.0011,
+//     "price": null,
+//     "reduceOnly": false,
+// }
+//
+// console.log(await ftxClient.apiRequest('POST', '/orders', data))
+// const data = await getStrategyInfo()
+// console.log(data.signalDetails)
+// console.log(data.signal)
+
+// cron('00 */15 * * * *', async () => {
+//     const data = await getStrategyInfo()
+//     console.log(data.signalDetails)
+//     console.log(data.signal)
+// })
