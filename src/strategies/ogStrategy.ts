@@ -21,18 +21,17 @@ export const runStrategy = async () => {
     const hasOpenPosition = await exchange.hasOpenPosition()
     const { upFractals, downFractals } = fractals
 
-    console.log(await exchange.placeStopLoss(downFractals[0], 'sell'))
-
-    if (!signal) {
-        console.log(`
-        ${new Date().toString().slice(0, 24)}
-        ...no signal`)
-        return
-    }
     if (hasOpenPosition) {
         console.log(`
         ${new Date().toString().slice(0, 24)}
         ...open position`)
+        await exchange.checkAndMoveStopLoss(fractals)
+        return
+    }
+    if (!signal) {
+        console.log(`
+        ${new Date().toString().slice(0, 24)}
+        ...no signal`)
         return
     }
 
@@ -48,14 +47,16 @@ export const runStrategy = async () => {
         case 'LONG':
             const longRes = await exchange.openPosition('buy', sizeInDollars)
             if (!longRes.success) return
-            const longStopRes = await exchange.placeStopLoss(downFractals[0], 'sell')
+            await exchange.placeStopLoss(fractals)
         case 'SHORT':
             const shortRes = await exchange.openPosition('sell', sizeInDollars)
             if (!shortRes.success) return
-            const shortStopRes = await exchange.placeStopLoss(upFractals[0], 'buy')
+            await exchange.placeStopLoss(fractals)
     }
 
-    console.log(`Entered ${signal} position`)
+    console.log(`
+    Entered ${signal} position`)
+
 }
 
 // {

@@ -3,7 +3,7 @@ import { cron } from 'https://deno.land/x/deno_cron/cron.ts'
 import { runStrategy } from "./src/strategies/ogStrategy.ts"
 export const VARIABLES = await env()
 
-await runStrategy()
 
-cron('00 */15 * * * *', async () => {
+cron(VARIABLES.STRATEGY_CRON_SETTINGS, async () => {
+    await runStrategy()
 })

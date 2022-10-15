@@ -1,5 +1,9 @@
 import { hmac } from "https://deno.land/x/hmac@v2.0.1/mod.ts"
 
+type Fractals = {
+    downFractals: number[], upFractals: number[]
+}
+
 export class FtxClient {
     private readonly apiSecret: string
     config: any
@@ -38,7 +42,9 @@ export class FtxClient {
 
     async hasOpenPosition() {
         const data = await this.apiRequest('GET', '/positions')
-        return data.result.length > 0
+        if (data.result.length === 0) return false
+        if (data.result[0].size === 0) return false
+        return true
     }
 
     async getAccountBalance() : Promise<number> {
@@ -62,19 +68,49 @@ export class FtxClient {
         return await this.apiRequest('POST', '/orders', data)
     }
 
-    async placeStopLoss(price: number, side: 'buy' | 'sell') {
+    async placeStopLoss(fractals: Fractals) {
         const res = await this.apiRequest('GET', '/positions')
-        const positionSize = res.result[0].size
+        const { size, side } = res.result[0]
+        let price
+        if (side === 'buy') price = fractals.downFractals[0]
+        if (side === 'sell') price = fractals.upFractals[0]
 
         const data = {
             'market': 'BTC-PERP',
             'triggerPrice': price,
             'reduceOnly': true,
             'type': 'stop',
-            size: positionSize,
-            side
+            side: side === 'buy' ? 'sell' : 'buy',
+            size,
+        }
+        const stopRes = await this.apiRequest('POST', '/conditional_orders', data)
+        console.log(`
+            Created ${side} stop @${price}
+            `)
+        console.log(stopRes)
+        console.log(data)
+        return stopRes
+    }
+
+    async cancelAllOrders() {
+        return await this.apiRequest('DELETE', '/orders', { 'market': 'BTC-PERP' })
+    }
+
+    async checkAndMoveStopLoss(fractals: Fractals) {
+        const currentStopLoss = await this.apiRequest('GET', '/conditional_orders?market=BTC-PERP')
+        if (currentStopLoss.result.length === 0) {
+            await this.placeStopLoss(fractals)
+            return
         }
 
-        return await this.apiRequest('POST', '/conditional_orders', data)
+        const { side, triggerPrice } = currentStopLoss.result
+        const { downFractals, upFractals } = fractals
+
+        if (side === 'buy' && triggerPrice !== downFractals[0] || side === 'sell' && triggerPrice !== upFractals[0]) {
+            await this.cancelAllOrders()
+            console.log(`
+            Canceled existing stops`)
+            await this.placeStopLoss(fractals)
+        }
     }
 }
