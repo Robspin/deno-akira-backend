@@ -47,6 +47,17 @@ export class FtxClient {
         return true
     }
 
+    async hasOpenTriggerOrders() {
+        const data = await this.apiRequest('GET', '/conditional_orders?market=BTC-PERP')
+        if (data.result.length === 0) return false
+        return true
+    }
+
+    async closeAllOrders() {
+        const data = await this.apiRequest('DELETE', '/orders')
+        return data
+    }
+
     async getAccountBalance() : Promise<number> {
         const res = await this.apiRequest('GET', '/account')
         return res.result.totalAccountValue.toFixed(2)
@@ -74,7 +85,6 @@ export class FtxClient {
         let price
         if (side === 'buy') price = fractals.downFractals[0]
         if (side === 'sell') price = fractals.upFractals[0]
-
         const data = {
             'market': 'BTC-PERP',
             'triggerPrice': price,
@@ -94,6 +104,11 @@ export class FtxClient {
 
     async cancelAllOrders() {
         return await this.apiRequest('DELETE', '/orders', { 'market': 'BTC-PERP' })
+    }
+
+    async checkAndCloseOrders() {
+        const hasStopLosses = await this.hasOpenTriggerOrders()
+        if (hasStopLosses) await this.closeAllOrders()
     }
 
     async checkAndMoveStopLoss(fractals: Fractals) {

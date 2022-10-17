@@ -19,7 +19,8 @@ const getStrategyInfo = async () => {
 export const runStrategy = async () => {
     const { fractals, signal, signalDetails } = await getStrategyInfo()
     const hasOpenPosition = await exchange.hasOpenPosition()
-    const { upFractals, downFractals } = fractals
+
+    if (!hasOpenPosition) await exchange.checkAndCloseOrders()
 
     if (hasOpenPosition) {
         console.log(`
@@ -48,6 +49,7 @@ export const runStrategy = async () => {
             const longRes = await exchange.openPosition('buy', sizeInDollars)
             if (!longRes.success) return
             await exchange.placeStopLoss(fractals)
+            break
         case 'SHORT':
             const shortRes = await exchange.openPosition('sell', sizeInDollars)
             if (!shortRes.success) return
