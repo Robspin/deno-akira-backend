@@ -118,9 +118,9 @@ export class FtxClient {
             return
         }
 
-        const { side, triggerPrice } = currentStopLoss.result
+        const { side, triggerPrice } = currentStopLoss.result[0]
         const { downFractals, upFractals } = fractals
-
+        
         if (side === 'buy' && triggerPrice !== downFractals[0] || side === 'sell' && triggerPrice !== upFractals[0]) {
             await this.cancelAllOrders()
             console.log(`
