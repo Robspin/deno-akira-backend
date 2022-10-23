@@ -94,7 +94,8 @@ export class FtxClient {
         const futureRes = await this.apiRequest('GET', '/futures/BTC-PERP')
         const price = futureRes.result.last
         const { market, size, side, tradeId } = res.result
-        const data = {
+
+        const body = JSON.stringify({
             strategy: 'ichimoku-fractal',
             timeframe: VARIABLES.STRATEGY_FRACTAL_TIMEFRAME,
             walletValue: Number(walletValue),
@@ -103,16 +104,13 @@ export class FtxClient {
             price,
             size,
             side,
-        }
+        })
 
         const headers = {
-            'accept': 'application/json',
-            'Content-Type': 'application/json; utf-8'
+            'content-type': 'application/json'
         }
 
-        console.log(data)
-
-        return await fetch(`${VARIABLES.AKIRA_BACKEND_URL}/api/trade`, { method: 'POST', headers, body: JSON.stringify(data) })
+        return await fetch(`${VARIABLES.AKIRA_BACKEND_URL}/api/trade`, { method: 'POST', headers, body })
     }
 
     async placeStopLoss(fractals: Fractals) {
