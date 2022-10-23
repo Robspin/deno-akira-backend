@@ -17,7 +17,7 @@ const getStrategyInfo = async () => {
 
 
 export const runStrategy = async () => {
-    const { fractals, signal, signalDetails } = await getStrategyInfo()
+    const { fractals, signalDetails, signal } = await getStrategyInfo()
     const hasOpenPosition = await exchange.hasOpenPosition()
 
     if (!hasOpenPosition) await exchange.checkAndCloseOrders()
@@ -60,26 +60,3 @@ export const runStrategy = async () => {
     Entered ${signal} position`)
 
 }
-
-// {
-//     success: true,
-//         result: {
-//     id: 188758654285,
-//         clientId: null,
-//         market: "BTC-PERP",
-//         type: "market",
-//         side: "buy",
-//         price: null,
-//         size: 0.0005,
-//         status: "new",
-//         filledSize: 0,
-//         remainingSize: 0.0005,
-//         reduceOnly: false,
-//         liquidation: null,
-//         avgFillPrice: null,
-//         postOnly: false,
-//         ioc: true,
-//         createdAt: "2022-10-08T16:51:00.883341+00:00",
-//         future: "BTC-PERP"
-// }
-

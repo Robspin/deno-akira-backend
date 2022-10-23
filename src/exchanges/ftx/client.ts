@@ -1,4 +1,6 @@
 import { hmac } from "https://deno.land/x/hmac@v2.0.1/mod.ts"
+import { config as env } from "https://deno.land/std@0.158.0/dotenv/mod.ts"
+export const VARIABLES = await env()
 
 type Fractals = {
     downFractals: number[], upFractals: number[]
@@ -64,6 +66,10 @@ export class FtxClient {
     }
 
     async openPosition(side: 'buy' | 'sell', size: number) {
+        if (await this.hasOpenPosition()) {
+            console.log('Already has open position!')
+            return
+        }
         const currentFuture = await this.apiRequest('GET', '/futures/BTC-PERP')
         const convertedSize = size / currentFuture.result.last
 
@@ -76,7 +82,37 @@ export class FtxClient {
             side
         }
 
+        const res = await this.apiRequest('POST', '/orders', data)
+        if (res.success) this.enterTradeInDB(res)
+        console.log(res)
+
         return await this.apiRequest('POST', '/orders', data)
+    }
+
+    async enterTradeInDB(res: any) {
+        const walletValue = await this.getAccountBalance()
+        const futureRes = await this.apiRequest('GET', '/futures/BTC-PERP')
+        const price = futureRes.result.last
+        const { market, size, side, tradeId } = res.result
+        const data = {
+            strategy: 'ichimoku-fractal',
+            timeframe: VARIABLES.STRATEGY_FRACTAL_TIMEFRAME,
+            walletValue: Number(walletValue),
+            tradeId: String(tradeId),
+            market,
+            price,
+            size,
+            side,
+        }
+
+        const headers = {
+            'accept': 'application/json',
+            'Content-Type': 'application/json; utf-8'
+        }
+
+        console.log(data)
+
+        return await fetch(`${VARIABLES.AKIRA_BACKEND_URL}/api/trade`, { method: 'POST', headers, body: JSON.stringify(data) })
     }
 
     async placeStopLoss(fractals: Fractals) {
@@ -94,11 +130,15 @@ export class FtxClient {
             size,
         }
         const stopRes = await this.apiRequest('POST', '/conditional_orders', data)
-        console.log(`
-            Created ${side} stop @${price}
-            `)
-        console.log(stopRes)
-        console.log(data)
+        if (stopRes.success) {
+            console.log(`
+                Created ${side} stop @${price}
+                `)
+        } else {
+            console.log(`
+                Failed to place stoploss
+                `)
+        }
         return stopRes
     }
 
@@ -120,7 +160,7 @@ export class FtxClient {
 
         const { side, triggerPrice } = currentStopLoss.result[0]
         const { downFractals, upFractals } = fractals
-        
+
         if (side === 'buy' && triggerPrice !== downFractals[0] || side === 'sell' && triggerPrice !== upFractals[0]) {
             await this.cancelAllOrders()
             console.log(`
