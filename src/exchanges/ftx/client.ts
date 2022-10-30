@@ -66,10 +66,6 @@ export class FtxClient {
     }
 
     async openPosition(side: 'buy' | 'sell', size: number) {
-        if (await this.hasOpenPosition()) {
-            console.log('Already has open position!')
-            return
-        }
         const currentFuture = await this.apiRequest('GET', '/futures/BTC-PERP')
         const convertedSize = size / currentFuture.result.last
 
@@ -86,20 +82,21 @@ export class FtxClient {
         if (res.success) this.enterTradeInDB(res)
         console.log(res)
 
-        return await this.apiRequest('POST', '/orders', data)
+        return res
     }
 
     async enterTradeInDB(res: any) {
         const walletValue = await this.getAccountBalance()
         const futureRes = await this.apiRequest('GET', '/futures/BTC-PERP')
         const price = futureRes.result.last
-        const { market, size, side, tradeId } = res.result
+        const { market, size, side, id } = res.result
 
         const body = JSON.stringify({
             strategy: 'ichimoku-fractal',
             timeframe: VARIABLES.STRATEGY_FRACTAL_TIMEFRAME,
-            walletValue: Number(walletValue),
-            tradeId: String(tradeId),
+            walletValueUSD: Number(walletValue),
+            walletValueBTC: Number((walletValue / price).toFixed(7)),
+            tradeId: String(id),
             market,
             price,
             size,
@@ -144,9 +141,13 @@ export class FtxClient {
         return await this.apiRequest('DELETE', '/orders', { 'market': 'BTC-PERP' })
     }
 
-    async checkAndCloseOrders() {
+    async checkAndCloseStoplossOrders() {
         const hasStopLosses = await this.hasOpenTriggerOrders()
         if (hasStopLosses) await this.closeAllOrders()
+    }
+
+    async convertDollarsIntoBitcoin() {
+        console.log(await this.apiRequest('GET', '/account'))
     }
 
     async checkAndMoveStopLoss(fractals: Fractals) {

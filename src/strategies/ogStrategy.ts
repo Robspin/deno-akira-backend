@@ -20,8 +20,6 @@ export const runStrategy = async () => {
     const { fractals, signalDetails, signal } = await getStrategyInfo()
     const hasOpenPosition = await exchange.hasOpenPosition()
 
-    if (!hasOpenPosition) await exchange.checkAndCloseOrders()
-
     if (hasOpenPosition) {
         console.log(`
         ${new Date().toString().slice(0, 24)}
