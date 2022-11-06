@@ -74,8 +74,7 @@ export class FtxClient {
         }
 
         const res = await this.apiRequest('POST', '/orders', data)
-        if (res.success) this.enterTradeInDB(res)
-        console.log(res)
+        if (res.success) await this.enterTradeInDB(res).then(() => console.log(`        entered trade into DB`)).catch(e => console.log(e))
 
         return res
     }
@@ -99,13 +98,12 @@ export class FtxClient {
         })
 
         const headers = { 'content-type': 'application/json' }
-
         return await fetch(`${VARIABLES.AKIRA_BACKEND_URL}/api/trades`, { method: 'POST', headers, body })
     }
 
     async placeStopLoss(fractals: Fractals) {
         const res = await this.apiRequest('GET', '/positions')
-        const { size, side, tradeId } = res.result[0]
+        const { size, side, id } = res.result[0]
         let price
         if (side === 'buy') price = fractals.downFractals[0]
         if (side === 'sell') price = fractals.upFractals[0]
@@ -119,20 +117,25 @@ export class FtxClient {
         }
         const stopRes = await this.apiRequest('POST', '/conditional_orders', data)
         if (stopRes.success) {
-            console.log(`
-                Created ${side} stop @${price}
-                `)
+            console.log(`       Created ${side} stop @${price}`)
         } else {
-            console.log(`
-                Failed to place stoploss
-                `)
+            console.log(`       Failed to place stoploss`)
         }
-
-        const body = JSON.stringify({ tradeId, stoppedOutAt: price })
-        const headers = { 'content-type': 'application/json' }
-        await fetch(`${VARIABLES.AKIRA_BACKEND_URL}/api/trades`, { method: 'PUT', headers, body })
+        await this.updateTradeInDB(price)
 
         return stopRes
+    }
+
+    async updateTradeInDB(stoppedOutAt: number | undefined ) {
+        const res = await this.apiRequest('GET', '/orders/history')
+        const tradeId = res.result[0].id
+
+        const body = JSON.stringify({ tradeId: String(tradeId), stoppedOutAt: String(stoppedOutAt) })
+
+        const headers = { 'content-type': 'application/json' }
+        return await fetch(`${VARIABLES.AKIRA_BACKEND_URL}/api/trades`, { method: 'PUT', headers, body })
+            .then(e => console.log(`        tradeStop updated`))
+            .catch(e => console.log(e))
     }
 
     async cancelAllOrders() {
