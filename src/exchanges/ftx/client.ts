@@ -55,11 +55,6 @@ export class FtxClient {
         return true
     }
 
-    async closeAllOrders() {
-        const data = await this.apiRequest('DELETE', '/orders')
-        return data
-    }
-
     async getAccountBalance() : Promise<number> {
         const res = await this.apiRequest('GET', '/account')
         return res.result.totalAccountValue.toFixed(2)
@@ -103,16 +98,14 @@ export class FtxClient {
             side,
         })
 
-        const headers = {
-            'content-type': 'application/json'
-        }
+        const headers = { 'content-type': 'application/json' }
 
-        return await fetch(`${VARIABLES.AKIRA_BACKEND_URL}/api/trade`, { method: 'POST', headers, body })
+        return await fetch(`${VARIABLES.AKIRA_BACKEND_URL}/api/trades`, { method: 'POST', headers, body })
     }
 
     async placeStopLoss(fractals: Fractals) {
         const res = await this.apiRequest('GET', '/positions')
-        const { size, side } = res.result[0]
+        const { size, side, tradeId } = res.result[0]
         let price
         if (side === 'buy') price = fractals.downFractals[0]
         if (side === 'sell') price = fractals.upFractals[0]
@@ -134,16 +127,16 @@ export class FtxClient {
                 Failed to place stoploss
                 `)
         }
+
+        const body = JSON.stringify({ tradeId, stoppedOutAt: price })
+        const headers = { 'content-type': 'application/json' }
+        await fetch(`${VARIABLES.AKIRA_BACKEND_URL}/api/trades`, { method: 'PUT', headers, body })
+
         return stopRes
     }
 
     async cancelAllOrders() {
         return await this.apiRequest('DELETE', '/orders', { 'market': 'BTC-PERP' })
-    }
-
-    async checkAndCloseStoplossOrders() {
-        const hasStopLosses = await this.hasOpenTriggerOrders()
-        if (hasStopLosses) await this.closeAllOrders()
     }
 
     async convertDollarsIntoBitcoin() {
